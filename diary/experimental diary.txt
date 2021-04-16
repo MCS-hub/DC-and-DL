@@ -1,0 +1,5 @@
+12/4/2021: Revise and refactor code.
+14/4/2021: Test hyperparameters for osDCA (reg_param, damping_const): save to folder: April_14_21
+15/4/2021: Run the osDCA 50 epochs, train(dc_model,reg_param = 0.0,epochs=50,num_iter_cnvx=8,damping_const_init=5000,cg_eps=1e-5,cg_k_max=100)
+save to file: April_15_21.pkl
+Idea: Use Gradient CLipping to control the gradient

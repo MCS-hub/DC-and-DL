@@ -10,24 +10,16 @@ import time
 from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import math_ops
 from utils.utils import norm_square, scalar_product
+from get_model import get_DC_component
+from evaluation_func import evaluate
 
 from config import *
-
-
-@tf.custom_gradient
-def log_sum_exp(x):
-    def grad(upstream):
-        X = tf.expand_dims(x,1)-tf.expand_dims(x,2)
-        return upstream*(1/tf.reduce_sum(tf.math.exp(X),2))
-    z = tf.reduce_logsumexp(x,axis=1,keepdims=True)
-    return z, grad
-
 
 
 def train(dc_model,reg_param = 0.0001,epochs=3,num_iter_cnvx=3,damping_const_init=1000,\
           cg_eps=1e-3,cg_k_max=1000):
     
-    global loss_fn, acc_metric, x_val, y_val, x_train, y_train, train_dataset
+    global loss_fn, acc_metric, x_val, y_val, x_train, y_train, train_dataset, y_train_tensor
         
     model_len = len(dc_model.trainable_weights)
 
@@ -37,49 +29,22 @@ def train(dc_model,reg_param = 0.0001,epochs=3,num_iter_cnvx=3,damping_const_ini
     train_accuracy = []
     val_accuracy = []
     
-    # compute and save accuracy on the validation set
-    outputs = dc_model(x_val)
-    delta = outputs[:,:10]
-    psi = outputs[:,10:]
-    y_model_prob_val = keras.layers.Softmax()(delta-psi)
-    y_model_label_val = y_model_prob_val.numpy().argmax(axis=-1)
-    acc_metric.reset_states()
-    acc_metric.update_state(y_model_label_val,y_val)
-    val_accuracy.append(acc_metric.result().numpy())
+    val_acc, train_acc, loss = evaluate(dc_model,reg_param)
     
-    # compute and save loss and accuracy on the train set
-    # accuracy
-    outputs = dc_model(x_train)
-    delta = outputs[:,:10]
-    psi = outputs[:,10:]
-    y_model_prob_train = keras.layers.Softmax()(delta-psi)
-    y_model_label_train = y_model_prob_train.numpy().argmax(axis=-1)
-    acc_metric.reset_states()
-    acc_metric.update_state(y_model_label_train,y_train)
-    train_accuracy.append(acc_metric.result().numpy())
-    
-    # loss
-    loss = loss_fn(y_train_tensor,y_model_prob_train) + \
-        reg_param*norm_square(dc_model.trainable_weights)
-    train_loss.append(loss.numpy())
+    val_accuracy.append(val_acc)
+    train_accuracy.append(train_acc)
+    train_loss.append(loss)
     
     time0 = time.time()
     
     for epoch in range(epochs):
+        
         for step, (x_batch,y_batch) in enumerate(train_dataset):
             
-            current_batch_size = y_batch.shape[0]
             y_one_hot = tf.one_hot(y_batch,depth=10,dtype=tf.float64)
+            
             with tf.GradientTape() as tape:
-                outputs = dc_model(x_batch)
-                delta = outputs[:,:10]
-                psi = outputs[:,10:]
-                H = tf.reduce_sum(delta + psi,axis=1) + tf.reduce_sum(delta*y_one_hot,1)
-                H = tf.reduce_sum(H)/current_batch_size
-                
-            G = tf.squeeze(log_sum_exp(delta-psi))\
-                +tf.reduce_sum(delta+psi,axis=1)+tf.reduce_sum(psi*y_one_hot,1)
-            G = tf.reduce_sum(G)/current_batch_size+reg_param*norm_square(dc_model.trainable_weights)
+                G, H = get_DC_component(dc_model,x_batch,y_one_hot, component='both',reg_param=reg_param)
                 
             gradH = tape.gradient(H,dc_model.trainable_weights)
             
@@ -91,27 +56,21 @@ def train(dc_model,reg_param = 0.0001,epochs=3,num_iter_cnvx=3,damping_const_ini
             #con_grad0 = [0*elem for elem in gradH]  #xem lai
             con_grad = [0*elem for elem in gradH]
             damping_const = damping_const_init
-            k_max =100
+            # k_max =100
             i_count = 0
             while True:
                 i_count += 1
                 with tf.GradientTape() as tape:
-                    outputs = dc_model(x_batch)
-                    delta = outputs[:,:10]
-                    psi = outputs[:,10:]
-                    G = tf.squeeze(log_sum_exp(delta-psi))\
-                        +tf.reduce_sum(delta+psi,axis=1)+tf.reduce_sum(psi*y_one_hot,1)
-                    G = tf.reduce_sum(G)/current_batch_size +\
-                        reg_param*norm_square(dc_model.trainable_weights)
+                    G = get_DC_component(dc_model,x_batch,y_one_hot, component='G',reg_param=reg_param)
                 
                 if i_count>=num_iter_cnvx:
                     if i_count > 10:
-                        print("break the convex optimizer.")
+                        #print("break the convex optimizer.")
                         break
                     gradH0x = scalar_product(gradH,dc_model.trainable_weights)
                     subloss = G-(H0+gradH0x-gradH0x0)
                     if subloss < subloss0:
-                        print("break the convex optimizer.")
+                        #print("break the convex optimizer.")
                         break
                 
                 
@@ -121,13 +80,8 @@ def train(dc_model,reg_param = 0.0001,epochs=3,num_iter_cnvx=3,damping_const_ini
                 #con_grad = con_grad0   #can be improved?
                 with tf.GradientTape() as out_tape:
                     with tf.GradientTape() as in_tape:
-                        outputs = dc_model(x_batch)
-                        delta = outputs[:,:10]
-                        psi = outputs[:,10:]
-                        G = tf.squeeze(log_sum_exp(delta-psi))\
-                            +tf.reduce_sum(delta+psi,axis=1)+tf.reduce_sum(psi*y_one_hot,1)
-                        G = tf.reduce_sum(G)/current_batch_size +\
-                              reg_param*norm_square(dc_model.trainable_weights)
+                        G = get_DC_component(dc_model,x_batch,y_one_hot, component='G',reg_param=reg_param)
+                        
                     gradG = in_tape.gradient(G,dc_model.trainable_weights)
                     elemwise_products = [
                         math_ops.multiply(grad_elem, array_ops.stop_gradient(v_elem))
@@ -142,12 +96,8 @@ def train(dc_model,reg_param = 0.0001,epochs=3,num_iter_cnvx=3,damping_const_ini
                     while True:
                         with tf.GradientTape() as out_tape:
                             with tf.GradientTape() as in_tape:
-                                outputs = dc_model(x_batch)
-                                delta = outputs[:,:10]
-                                psi = outputs[:,10:]
-                                G = tf.squeeze(log_sum_exp(delta-psi))\
-                                    +tf.reduce_sum(delta+psi,axis=1)+tf.reduce_sum(psi*y_one_hot,1)
-                                G = tf.reduce_sum(G)/current_batch_size +reg_param*norm_square(dc_model.trainable_weights)
+                                G = get_DC_component(dc_model,x_batch,y_one_hot, component='G',reg_param=reg_param)
+                            
                             gradG = in_tape.gradient(G,dc_model.trainable_weights)
                             elemwise_products = [
                                 math_ops.multiply(grad_elem, array_ops.stop_gradient(v_elem))
@@ -177,7 +127,7 @@ def train(dc_model,reg_param = 0.0001,epochs=3,num_iter_cnvx=3,damping_const_ini
                 
                 gradH0x = scalar_product(gradH,dc_model.trainable_weights)
                 subloss = G-(H0+gradH0x-gradH0x0)
-                print("subloss",subloss.numpy())
+                #print("subloss",subloss.numpy())
 
                 
                 for idx in range(model_len):
@@ -189,31 +139,11 @@ def train(dc_model,reg_param = 0.0001,epochs=3,num_iter_cnvx=3,damping_const_ini
                 d_time = time.time() - time0
                 train_time.append(train_time[-1]+d_time)
                 
-                # compute and save accuracy on the validation set
-                outputs = dc_model(x_val)
-                delta = outputs[:,:10]
-                psi = outputs[:,10:]
-                y_model_prob_val = keras.layers.Softmax()(delta-psi)
-                y_model_label_val = y_model_prob_val.numpy().argmax(axis=-1)
-                acc_metric.reset_states()
-                acc_metric.update_state(y_model_label_val,y_val)
-                val_accuracy.append(acc_metric.result().numpy())
-                
-                # compute and save loss and accuracy on the train set
-                # accuracy
-                outputs = dc_model(x_train)
-                delta = outputs[:,:10]
-                psi = outputs[:,10:]
-                y_model_prob_train = keras.layers.Softmax()(delta-psi)
-                y_model_label_train = y_model_prob_train.numpy().argmax(axis=-1)
-                acc_metric.reset_states()
-                acc_metric.update_state(y_model_label_train,y_train)
-                train_accuracy.append(acc_metric.result().numpy())
-                
-                # loss
-                loss = loss_fn(y_train_tensor,y_model_prob_train) + \
-                    reg_param*norm_square(dc_model.trainable_weights)
-                train_loss.append(loss.numpy())
+                val_acc, train_acc, loss = evaluate(dc_model,reg_param)
+    
+                val_accuracy.append(val_acc)
+                train_accuracy.append(train_acc)
+                train_loss.append(loss)
                 
                 print("train accuracy: ",round(train_accuracy[-1],4),"--val accuracy: ",
                       round(val_accuracy[-1],4),"--train loss: ",round(train_loss[-1],5))

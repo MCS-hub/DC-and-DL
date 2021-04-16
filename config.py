@@ -10,7 +10,7 @@ from tensorflow import keras
 
 # parameters for the normal model
 batch_size=64
-loss_fn = tf.keras.losses.SparseCategoricalCrossentropy()  #cross-entropy loss
+loss_fn = tf.keras.losses.SparseCategoricalCrossentropy()
 acc_metric = tf.keras.metrics.Accuracy()
 
 # get data --------------------------------------------------------------------

@@ -85,20 +85,16 @@ class DC_V2(keras.layers.Layer):
         varphi = inputs[:,:int(k/2)]
         vartheta = inputs[:,int(k/2):]
         
-    
-        
         ReLu_w = tf.keras.activations.relu(self.w)
         ReLu_b = tf.keras.activations.relu(self.b)
         ReLu_nw = ReLu_w - self.w
         ReLu_nb = ReLu_b - self.b
-        
-        
+           
         temp_term = 0.5*(tf.expand_dims(tf.reduce_sum(tf.square(varphi),1)+tf.reduce_sum(tf.square(vartheta),1),1) 
                          + tf.expand_dims(tf.reduce_sum(tf.square(self.w),0),0))
 
         G = tf.matmul(varphi,ReLu_w) + tf.matmul(vartheta,ReLu_nw) + ReLu_b + temp_term 
         H = tf.matmul(varphi,ReLu_nw) + tf.matmul(vartheta,ReLu_w) + ReLu_nb + temp_term
-        
         
         if self.activation=='relu':  #for a moment, consider ReLU only
             varphi = keras.activations.relu(G-H) + H
