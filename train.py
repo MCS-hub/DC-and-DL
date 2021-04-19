@@ -19,7 +19,7 @@ from config import *
 
 
 def train(dc_model, reg_param = 0.0001,epochs=3,num_iter_cnvx=3,max_iter_cnvx=20,damping_const_init=1000,\
-          cg_eps=1e-3):
+          cg_eps=1e-3,convex_optimizer='Adam',learning_rate=0.001):
     
     global loss_fn, acc_metric, x_val, y_val, x_train, y_train, train_dataset
         
@@ -42,13 +42,14 @@ def train(dc_model, reg_param = 0.0001,epochs=3,num_iter_cnvx=3,max_iter_cnvx=20
     for epoch in range(epochs):
         
         for step, (x_batch,y_batch) in enumerate(train_dataset):
-            
+
             # osDCA(dc_model=dc_model,reg_param=reg_param,damping_const_init=damping_const_init,
             #       num_iter_cnvx=num_iter_cnvx,max_iter_cnvx=max_iter_cnvx,cg_eps=cg_eps,
             #       x_batch=x_batch,y_batch=y_batch)
             
-            osDCA_V2(dc_model=dc_model,reg_param=reg_param,learning_rate=0.000001,
-                     num_iter_cnvx=num_iter_cnvx,max_iter_cnvx=max_iter_cnvx,x_batch=x_batch,y_batch=y_batch)
+            osDCA_V2(dc_model=dc_model,reg_param=reg_param,learning_rate=learning_rate,
+                     num_iter_cnvx=num_iter_cnvx,max_iter_cnvx=max_iter_cnvx,
+                     x_batch=x_batch,y_batch=y_batch,convex_optimizer=convex_optimizer)
             
             if step%20==0:
                 

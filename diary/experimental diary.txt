@@ -1,5 +1,15 @@
 12/4/2021: Revise and refactor code.
+
 14/4/2021: Test hyperparameters for osDCA (reg_param, damping_const): save to folder: April_14_21
+
 15/4/2021: Run the osDCA 50 epochs, train(dc_model,reg_param = 0.0,epochs=50,num_iter_cnvx=8,damping_const_init=5000,cg_eps=1e-5,cg_k_max=100)
 save to file: April_15_21.pkl
 Idea: Use Gradient CLipping to control the gradient
+
+17/4/2021: observation when using first-order methods to solve the convex subproblem:
+if we use a moderate learning rate, the first iteration will be bad, but after that the objective function
+of the subproblem decreases.
+Therefore, should have a schedule of tuning the learning rate: small at the beginning, then increase a little bit
+** Change the DC decomposition by adding lambda*||x||^2 to both DC components
+
+19/4/2021: Idea: use a boosting step after solving each convex subproblem.

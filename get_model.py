@@ -37,7 +37,7 @@ def get_dc_model(activation='relu'):
 
     # stack layers together
     x = Dense(inputs)
-    x = tf.concat([x,0*x],axis=1)
+    x = tf.concat([x,0.0*x],axis=1)
     x = DC1(x)
     x = DC2(x)
     

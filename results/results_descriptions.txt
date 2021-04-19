@@ -1,0 +1,3 @@
+April_18_21: osDCA combined with different convex solvers including Adadelta, Adagrad, Adamax,...
+
+April_19_21: osDCA combined with Adamax (learning_rate,beta_1,beta_2,epsilon,num_iter_cnvx)

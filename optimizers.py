@@ -120,8 +120,8 @@ def CGD(dc_model,ngrad,con_grad,reg_param,damping_const,cg_eps,x_batch,y_one_hot
     return con_grad
 
 
-def osDCA_V2(dc_model,reg_param,learning_rate,num_iter_cnvx,max_iter_cnvx,x_batch,y_batch):
-    
+def osDCA_V2(dc_model,reg_param,learning_rate,num_iter_cnvx,max_iter_cnvx,x_batch,y_batch,convex_optimizer):
+
     y_one_hot = tf.one_hot(y_batch,depth=10,dtype=tf.float64)
     model_len = len(dc_model.trainable_weights)
     
@@ -138,7 +138,30 @@ def osDCA_V2(dc_model,reg_param,learning_rate,num_iter_cnvx,max_iter_cnvx,x_batc
     gradH0x0 = scalar_product(gradH,dc_model.trainable_weights)
     
     i_count = 0
-    cnv_opt =  tf.keras.optimizers.Adamax(learning_rate=learning_rate)
+    
+    if convex_optimizer == 'SGD':
+        cnv_opt =  tf.keras.optimizers.SGD(learning_rate=learning_rate)
+    elif convex_optimizer == 'Adamax':
+        cnv_opt =  tf.keras.optimizers.Adamax(learning_rate=learning_rate[0],beta_1=learning_rate[1],\
+                                              beta_2=learning_rate[2],epsilon=learning_rate[3])
+    elif convex_optimizer == 'Adam':
+        cnv_opt =  tf.keras.optimizers.Adam(learning_rate=learning_rate)
+    elif convex_optimizer == 'Nadam':
+        cnv_opt =  tf.keras.optimizers.Nadam(learning_rate=learning_rate)
+    elif convex_optimizer == 'RMSprop':
+        cnv_opt =  tf.keras.optimizers.RMSprop(learning_rate=learning_rate)
+    elif convex_optimizer == 'Ftrl':
+        cnv_opt =  tf.keras.optimizers.Ftrl(learning_rate=learning_rate)
+    elif convex_optimizer == 'Adagrad':
+        cnv_opt = tf.keras.optimizers.Adagrad(learning_rate=learning_rate)
+    elif convex_optimizer == 'Adadelta':
+        cnv_opt = tf.keras.optimizers.Adadelta(learning_rate=learning_rate)
+    else:
+        raise NameError('The convex optimizer is not valid.')
+        
+        
+        
+        
     while True:
         i_count += 1
         
