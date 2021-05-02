@@ -8,7 +8,7 @@ Created on Fri Apr  9 13:43:25 2021
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
-from special_layers import DC_V2
+from special_layers import DC_V2, DC_V3_type1, DC_V3_type2
 from utils.utils import log_sum_exp, norm_square
 
 # normal model
@@ -75,3 +75,21 @@ def get_DC_component(dc_model,x_batch,y_one_hot, component='both',reg_param = No
         H = tf.reduce_sum(psi,axis=1) + tf.reduce_sum(delta*y_one_hot,1)
         H = tf.reduce_mean(H)
         return H
+
+
+def get_dc_model_v3(params):
+    
+    inputs = tf.keras.Input(shape=(784,),name='input')
+    Dense = layers.Dense(64,name='dense')  
+    DC1 = DC_V3_type1(units=64,rho1=params[0],rho2=params[1])
+    DC2 = DC_V3_type2(units=10,rho1=params[2],rho2=params[3],rho3=params[4],\
+                      kappa1=params[5],kappa2=params[6],kappa3=params[7])
+
+    # stack layers together
+    x = Dense(inputs)
+    x = DC1(x)
+    x = DC2(x)
+    
+    dc_model = keras.Model(inputs=inputs,outputs=x,name='dc_model')
+    
+    return dc_model

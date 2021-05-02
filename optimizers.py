@@ -120,20 +120,22 @@ def CGD(dc_model,ngrad,con_grad,reg_param,damping_const,cg_eps,x_batch,y_one_hot
     return con_grad
 
 
-def osDCA_V2(dc_model,reg_param,learning_rate,num_iter_cnvx,max_iter_cnvx,x_batch,y_batch,convex_optimizer):
+def osDCA_V2(dc_model,reg_param,learning_rate,num_iter_cnvx,max_iter_cnvx,x_batch,y_batch,convex_optimizer,Nesterov_coef=None,ld=0):
 
     y_one_hot = tf.one_hot(y_batch,depth=10,dtype=tf.float64)
     model_len = len(dc_model.trainable_weights)
     
     with tf.GradientTape() as tape:
         G, H = get_DC_component(dc_model,x_batch,y_one_hot, component='both',reg_param=reg_param)
+        G =  G + ld*norm_square(dc_model.trainable_weights)
+        H = H + ld*norm_square(dc_model.trainable_weights)
         
     gradH = tape.gradient(H,dc_model.trainable_weights)
     
     H0 = H
     G0 = G
     subloss0 = G0 - H0
-    #print("subloss0: ",subloss0.numpy())
+    print("subloss0:",subloss0.numpy())
     
     gradH0x0 = scalar_product(gradH,dc_model.trainable_weights)
     
@@ -144,6 +146,7 @@ def osDCA_V2(dc_model,reg_param,learning_rate,num_iter_cnvx,max_iter_cnvx,x_batc
     elif convex_optimizer == 'Adamax':
         cnv_opt =  tf.keras.optimizers.Adamax(learning_rate=learning_rate[0],beta_1=learning_rate[1],\
                                               beta_2=learning_rate[2],epsilon=learning_rate[3])
+        #cnv_opt = tf.keras.optimizers.Adamax(learning_rate=learning_rate)
     elif convex_optimizer == 'Adam':
         cnv_opt =  tf.keras.optimizers.Adam(learning_rate=learning_rate)
     elif convex_optimizer == 'Nadam':
@@ -160,29 +163,43 @@ def osDCA_V2(dc_model,reg_param,learning_rate,num_iter_cnvx,max_iter_cnvx,x_batc
         raise NameError('The convex optimizer is not valid.')
         
         
-        
-        
+    if Nesterov_coef is not None:
+        pre_weights = dc_model.get_weights()
+    
     while True:
         i_count += 1
         
         with tf.GradientTape() as tape:
             G = get_DC_component(dc_model,x_batch,y_one_hot, component='G',reg_param=reg_param)
-        
+            G = G + ld*norm_square(dc_model.trainable_weights)
+                
         # check condition to break the convex solver
         if i_count > num_iter_cnvx:
             if i_count > max_iter_cnvx:
-                #print("break the convex solver after 10 iterations.")
+                print("break the convex solver after 10 iterations.")
                 break
             
             gradH0x = scalar_product(gradH,dc_model.trainable_weights)
             subloss = G-(H0+gradH0x-gradH0x0)
             #print("subloss:  ", subloss.numpy())
             if subloss < subloss0:
-                #print("break the convex solver after finding better solution.")
+                print("break the convex solver after finding better solution.")
                 break
         
         gradG = tape.gradient(G, dc_model.trainable_weights)
         grads = [gradG[idx]-gradH[idx] for idx in range(model_len)]
         
         cnv_opt.apply_gradients(zip(grads,dc_model.trainable_weights))
+        
+        gradH0x = scalar_product(gradH,dc_model.trainable_weights)
+        G = get_DC_component(dc_model,x_batch,y_one_hot, component='G',reg_param=reg_param)\
+            + ld*norm_square(dc_model.trainable_weights)
+        subloss = G-(H0+gradH0x-gradH0x0)
+        print("subloss: ", subloss.numpy())
+    
+    if Nesterov_coef is not None:
+        d = [Nesterov_coef*(dc_model.get_weights()[elem] - pre_weights[elem]) for elem in range(model_len)]
+        
+        for idx in range(model_len):
+            dc_model.trainable_weights[idx].assign_add(d[idx])
 

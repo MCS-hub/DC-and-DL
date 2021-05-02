@@ -1,3 +1,21 @@
 April_18_21: osDCA combined with different convex solvers including Adadelta, Adagrad, Adamax,...
 
 April_19_21: osDCA combined with Adamax (learning_rate,beta_1,beta_2,epsilon,num_iter_cnvx)
+
+April_19_21b: normal_model trained by SGD(lr=0.01), one epoch. This model is used as initial point to run osDCA
+
+April_20_21: osDCA+Adamax+Nesterov:
+params for Adamax: lr = 0.000001, beta1 = 0.9, beta2 = 0.99, eps = 1e-8
+number of convex iters (osDCA): 4, max_iter_cnvx = 20
+epochs: 50
+
+April_22_21: osDCA+Adamax+Nesterov:
+add ld*norm_square(dc_model.trainable_weights) to both G and H.
+params Adamax: lr = 0.000001, beta1 = 0.9, beta2 = 0.99, eps = 1e-8
+number of convex iters (osDCA): 1, max_iter_cnvx = 20
+epochs: 50
+
+osDCA_Adamax_Nesterov.pkl: ld = 10
+osDCA_Adamax_Nesterov_2.pkl: ld = 50
+
+May_2_21: osDCA+Adamax+Nesterov with more hyperparameters

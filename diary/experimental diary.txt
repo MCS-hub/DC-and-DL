@@ -13,3 +13,9 @@ Therefore, should have a schedule of tuning the learning rate: small at the begi
 ** Change the DC decomposition by adding lambda*||x||^2 to both DC components
 
 19/4/2021: Idea: use a boosting step after solving each convex subproblem.
+Idea: there is an efficient method to optimize functions involving the log-sum-exp
+
+20/4/2021: Prevent the "overshooting" behaviors of Adamax, Adam, Adagrad at the first iteration.
+Perhaps considering the learning rate schedule and the initialization of first and second order moments
+
+30/4/2021: Idea to write a manuscript: DC approach is backed by theoretical background for nonconvex optimization in comparison with Adam, Adagrad,...
