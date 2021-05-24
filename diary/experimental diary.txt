@@ -19,3 +19,13 @@ Idea: there is an efficient method to optimize functions involving the log-sum-e
 Perhaps considering the learning rate schedule and the initialization of first and second order moments
 
 30/4/2021: Idea to write a manuscript: DC approach is backed by theoretical background for nonconvex optimization in comparison with Adam, Adagrad,...
+
+5/5/2021: Idea: Investigate Adamax for the deterministic mini-batch convex subproblem.
+
+5/5/2021: Use DCA-like: verify 8 rho-params that not necessarily sastify the inequalities
+Idea: At several first epochs, force to solve subproblems to decrease under a certain threshold (not break the Adamax when the first better solution is found)
+
+5/5/2021: Nesterov to accelerate using the "accumulative direction". This direction can be used in the Boosted DCA
+accumulative direction is a descent direction at x_{k+1}??
+
+6/5/2021: Adaptive deterministic Adamax: modify Adamax, use information of old iterations also

@@ -13,7 +13,7 @@ from tensorflow.python.ops import math_ops
 from tensorflow.keras import layers
 
     
-    
+# Consider activations: sigma = u - v with u', v' are not necessarily nonnegative
 class DC(keras.layers.Layer):
     def __init__(self,units=32,activation=None):
         super(DC,self).__init__()
@@ -46,8 +46,8 @@ class DC(keras.layers.Layer):
         ReLu_nb = ReLu_b - self.b
         
         
-        temp_term = 0.5*(tf.expand_dims(tf.reduce_sum(tf.square(varphi),1)+tf.reduce_sum(tf.square(vartheta),1),1) 
-                         + tf.expand_dims(tf.reduce_sum(tf.square(self.w),0),0))
+        temp_term = 0.5*(tf.reduce_sum(tf.square(varphi),1,keepdims=True)+tf.reduce_sum(tf.square(vartheta),1,keepdims=True)
+                         +tf.reduce_sum(tf.square(self.w),0,keepdims=True))
 
         G = tf.matmul(varphi,ReLu_w) + tf.matmul(vartheta,ReLu_nw) + ReLu_b + temp_term 
         H = tf.matmul(varphi,ReLu_nw) + tf.matmul(vartheta,ReLu_w) + ReLu_nb + temp_term
@@ -61,6 +61,7 @@ class DC(keras.layers.Layer):
            return tf.concat([G,H],1)
 
 
+# Consider activations: sigma = u-v where u',v'>=0
 class DC_V2(keras.layers.Layer):
     def __init__(self,units=32,activation=None):
         super(DC_V2,self).__init__()
@@ -90,8 +91,8 @@ class DC_V2(keras.layers.Layer):
         ReLu_nw = ReLu_w - self.w
         ReLu_nb = ReLu_b - self.b
            
-        temp_term = 0.5*(tf.expand_dims(tf.reduce_sum(tf.square(varphi),1)+tf.reduce_sum(tf.square(vartheta),1),1) 
-                         + tf.expand_dims(tf.reduce_sum(tf.square(self.w),0),0))
+        temp_term = 0.5*(tf.reduce_sum(tf.square(varphi),1,keepdims=True)+tf.reduce_sum(tf.square(vartheta),1,keepdims=True) 
+                         + tf.reduce_sum(tf.square(self.w),0,keepdims=True))
 
         G = tf.matmul(varphi,ReLu_w) + tf.matmul(vartheta,ReLu_nw) + ReLu_b + temp_term 
         H = tf.matmul(varphi,ReLu_nw) + tf.matmul(vartheta,ReLu_w) + ReLu_nb + temp_term
@@ -108,6 +109,11 @@ class DC_V2(keras.layers.Layer):
         else: 
            return tf.concat([G,H],1)
 
+
+# DC layers with ``rho decompositions" for the multiplication between the previous 
+# layer and the weight matrix of the current layer
+
+# The first DC layer: right after the first hidden layer
 class DC_V3_type1(keras.layers.Layer):
     def __init__(self,units=32,rho1=1,rho2=1):
         super(DC_V3_type1,self).__init__()
@@ -143,6 +149,8 @@ class DC_V3_type1(keras.layers.Layer):
         
         return tf.concat([G,H],1)
 
+
+# the second DC layer: applicable for all other layers except the first DC layer
 class DC_V3_type2(keras.layers.Layer):
     def __init__(self,units=32,rho1=1,rho2=1,rho3=1,kappa1=1,kappa2=1,kappa3=1):
         super(DC_V3_type2,self).__init__()

@@ -11,7 +11,7 @@ from tensorflow.keras import layers
 from special_layers import DC_V2, DC_V3_type1, DC_V3_type2
 from utils.utils import log_sum_exp, norm_square
 
-# normal model
+# normal model for the 3-layer neural network for classification of the mnist dataset
 def get_model():
         
     inputs = tf.keras.Input(shape=(784,))
@@ -28,6 +28,7 @@ def get_model():
     return model
 
 
+# get the DC model for the canonical DC decomposition, consider activation = u - v where u',v'>=0
 def get_dc_model(activation='relu'):
     
     inputs = tf.keras.Input(shape=(784,),name='input')
@@ -45,6 +46,8 @@ def get_dc_model(activation='relu'):
     
     return dc_model
 
+
+# get DC components where the softmax layer uses the decomposition f = u - v with u', v'>=0
 def get_DC_component(dc_model,x_batch,y_one_hot, component='both',reg_param = None):
     
     outputs = dc_model(x_batch)
@@ -77,13 +80,14 @@ def get_DC_component(dc_model,x_batch,y_one_hot, component='both',reg_param = No
         return H
 
 
-def get_dc_model_v3(params):
+# get the DC model with the "rho" decomposition for the multiplication operatiors
+def get_dc_model_v3(params_decom,init_weights=None):
     
     inputs = tf.keras.Input(shape=(784,),name='input')
     Dense = layers.Dense(64,name='dense')  
-    DC1 = DC_V3_type1(units=64,rho1=params[0],rho2=params[1])
-    DC2 = DC_V3_type2(units=10,rho1=params[2],rho2=params[3],rho3=params[4],\
-                      kappa1=params[5],kappa2=params[6],kappa3=params[7])
+    DC1 = DC_V3_type1(units=64,rho1=params_decom[0],rho2=params_decom[1])
+    DC2 = DC_V3_type2(units=10,rho1=params_decom[2],rho2=params_decom[3],rho3=params_decom[4],\
+                      kappa1=params_decom[5],kappa2=params_decom[6],kappa3=params_decom[7])
 
     # stack layers together
     x = Dense(inputs)
@@ -91,5 +95,8 @@ def get_dc_model_v3(params):
     x = DC2(x)
     
     dc_model = keras.Model(inputs=inputs,outputs=x,name='dc_model')
+    
+    if init_weights is not None:
+        dc_model.set_weights(init_weights)
     
     return dc_model

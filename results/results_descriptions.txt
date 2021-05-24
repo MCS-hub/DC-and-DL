@@ -19,3 +19,30 @@ osDCA_Adamax_Nesterov.pkl: ld = 10
 osDCA_Adamax_Nesterov_2.pkl: ld = 50
 
 May_2_21: osDCA+Adamax+Nesterov with more hyperparameters
+
+May_3_21: osDCA+Adamax+Nesterov with a new DC decomposition on the "multiplication layer": max_iter_cnvx = 20, params_adamax = [0.000001,0.9,0.999,1e-7]
+
+May_4_21: osDCA+Adamax+Nesterov with a new DC decomposition on the "multiplication layer": max_iter_cnvx = 50, params_adamax = [0.000001,0.9,0.999,1e-7]
+
+May_5_21b: osDCA+Adamax+Nesterov with a new DC decomposition on the "multiplication layer": max_iter_cnvx = 80, params_adamax = [0.00001,0.9,0.999,1e-7]
+
+May_6_21b: osDCA+Adamax+Nesterov with a new DC decomposition on the "multiplication layer": max_iter_cnvx = 80, params_adamax = [0.00001,0.9,0.999,1e-7]
+Insight drawn from experiments: rho2, rho3 should be relatively small compared with rho1, kappa2 should be relatively small compared with kappa1
+idea: if use DCA-like, kappa1, rho1 can be small also
+
+May_7_21: osDCA+Adamax+Nesterov with a new DC decomposition on the "multiplication layer": max_iter_cnvx = 80, params_adamax = [0.00001,0.9,0.999,1e-7]
+
+May_8_21: osDCA-like: params_adamax = [0.0001,0.9,0.999,1e-7],
+eps2 = 0.1
+rho2 = 1e-6
+rho3 = 1e-8
+kappa2 = 1e-8
+kappa3 = 0.0
+
+eps1 = 1.
+rho1 = 1.
+kappa1 = 1.
+
+rate_eps1 = 2.
+rate_rho1 = 2.
+rate_kappa1 = 2.
