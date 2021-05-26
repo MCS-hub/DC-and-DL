@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 Created on Fri Apr 16 10:13:15 2021
-
 @author: Phuc Hau
 """
 
@@ -318,4 +317,3 @@ def osDCAlike_V2(init_weights,params_decom,reg_param,learning_rate,num_iter_cnvx
         return updated_weights
     else:
         return dc_model.get_weights()
-

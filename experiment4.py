@@ -34,25 +34,20 @@ params_decom = [eps1,eps2,rho1,rho2,rho3,kappa1,kappa2,kappa3]
 dc_model = get_dc_model_v3(params_decom)
 
 train_time,train_loss,train_accuracy,val_accuracy = \
-train_v2(dc_model=dc_model, reg_param = 0.001,epochs=20,num_iter_cnvx=1,\
+train_v2(dc_model=dc_model, reg_param = 0.000001,epochs=20,num_iter_cnvx=1,\
       max_iter_cnvx=80,convex_optimizer='Adamax',learning_rate=learning_rate,ld=0)
 
-dc_model = get_dc_model_v3(params_decom)
+# dc_model = get_dc_model_v3(params_decom)
 
-train_time1,train_loss1,train_accuracy1,val_accuracy1 = \
-train_v2(dc_model=dc_model, reg_param = 0.001,epochs=10,num_iter_cnvx=1,\
-      max_iter_cnvx=80,convex_optimizer='Adamax',learning_rate=learning_rate,ld=0)
+# train_time1,train_loss1,train_accuracy1,val_accuracy1 = \
+# train_v2(dc_model=dc_model, reg_param = 0.0,epochs=10,num_iter_cnvx=1,\
+#       max_iter_cnvx=80,convex_optimizer='Adamax',learning_rate=learning_rate,ld=0)
 
-dc_model = get_dc_model_v3(params_decom)
-train_time2,train_loss2,train_accuracy2,val_accuracy2 = \
-train_v2(dc_model=dc_model, reg_param = 0.001,epochs=20,num_iter_cnvx=1,\
-      max_iter_cnvx=20,convex_optimizer='Adamax',learning_rate=learning_rate,ld=0)
-    
-dc_model = get_dc_model_v3(params_decom)
-train_time3,train_loss3,train_accuracy3,val_accuracy3 = \
-train_v2(dc_model=dc_model, reg_param = 0.001,epochs=10,num_iter_cnvx=1,\
-      max_iter_cnvx=20,convex_optimizer='Adamax',learning_rate=learning_rate,ld=0)
-#plt.plot(train_time,val_accuracy)
+
+plt.plot(train_time,train_accuracy)
+
+# with open('osDCA_reg_0.0_epochs_20.pkl','wb') as f:
+#     pickle.dump([train_loss,train_time,train_accuracy,val_accuracy],f)
 
 
 

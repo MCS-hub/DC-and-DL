@@ -15,7 +15,7 @@ acc_metric = tf.keras.metrics.Accuracy()
 
 # get data --------------------------------------------------------------------
 # load data
-(x_train,y_train), (x_test,y_test) = keras.datasets.mnist.load_data()
+(x_train,y_train), (x_test,y_test) = keras.datasets.fashion_mnist.load_data()
 
 # flatten images
 x_train = x_train.reshape(60000,784).astype("float64")/255
