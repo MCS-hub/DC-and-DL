@@ -13,6 +13,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 from train import train, train_v2
+from evaluation_func import test
 from get_model import get_dc_model, get_model, get_dc_model_v3
 from matplotlib import pyplot as plt
 import random
@@ -30,6 +31,11 @@ rho2_list = [0.001,0.0001,0.00001,1e-6,1e-7,1e-8,1e-9]
 rho3_list = [0.0001,0.00001,0.000001,1e-7,1e-8,1e-9]
 kappa2_list = [0.001,0.0001,0.00001,0.000001,1e-7,1e-8,1e-9]
 
+# load the initial point
+with open('osDCA.pkl','rb') as f:
+    [train_time,train_loss,train_accuracy,val_accuracy,test_accuracy,initial_point,solution] = pickle.load(f)
+
+    
 
 for i in range(ITERATIONS):
     eps2 = random.sample(eps2_list,1)[0]
@@ -43,14 +49,19 @@ for i in range(ITERATIONS):
     params_decom = [eps1,eps2,rho1,rho2,rho3,kappa1,kappa2,kappa3]
 
     dc_model = get_dc_model_v3(params_decom)
+    dc_model.set_weights(initial_point)
     
     train_time,train_loss,train_accuracy,val_accuracy = \
     train_v2(dc_model=dc_model, reg_param = 0.000001,epochs=20,num_iter_cnvx=1,\
           max_iter_cnvx=80,convex_optimizer='Adamax',learning_rate=params_adamax,ld=0)
     
+    solution = dc_model.get_weights()
+    model = get_model()
+    model.set_weights(solution)
+    test_accuracy = test(model)
         
     with open('rho_dc_'+str(i)+'.pkl','wb') as f:
-        pickle.dump([train_loss,train_time,train_accuracy,val_accuracy],f)
+        pickle.dump([train_loss,train_time,train_accuracy,val_accuracy,test_accuracy,solution],f)
     
     del dc_model
     
