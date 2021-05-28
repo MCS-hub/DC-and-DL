@@ -130,8 +130,8 @@ def osDCA_V2(dc_model,reg_param,learning_rate,num_iter_cnvx,max_iter_cnvx,x_batc
     
     with tf.GradientTape() as tape:
         G, H = get_DC_component(dc_model,x_batch,y_one_hot, component='both',reg_param=reg_param)
-        G =  G + ld*norm_square(dc_model.trainable_weights)
-        H = H + ld*norm_square(dc_model.trainable_weights)
+        #G =  G + ld*norm_square(dc_model.trainable_weights)
+        #H = H + ld*norm_square(dc_model.trainable_weights)
         
     gradH = tape.gradient(H,dc_model.trainable_weights)
     
@@ -168,22 +168,21 @@ def osDCA_V2(dc_model,reg_param,learning_rate,num_iter_cnvx,max_iter_cnvx,x_batc
     else:
         raise NameError('The convex optimizer is not valid.')
         
-        
-    if Nesterov_coef is not None:
-        pre_weights = dc_model.get_weights()
     
     weights0 = dc_model.get_weights()
+    better_sol_found = True
     
     while True:
         i_count += 1
         
         with tf.GradientTape() as tape:
             G = get_DC_component(dc_model,x_batch,y_one_hot, component='G',reg_param=reg_param)
-            G = G + ld*norm_square(dc_model.trainable_weights)
+            #G = G + ld*norm_square(dc_model.trainable_weights)
                 
         # check condition to break the convex solver
         if i_count > num_iter_cnvx:
             if i_count > max_iter_cnvx:
+                better_sol_found = False
                 dc_model.set_weights(weights0)
                 print("break the convex solver after max iterations.")
                 break
@@ -209,8 +208,8 @@ def osDCA_V2(dc_model,reg_param,learning_rate,num_iter_cnvx,max_iter_cnvx,x_batc
     
     #return subhistory
     
-    if Nesterov_coef is not None:
-        d = [Nesterov_coef*(dc_model.get_weights()[elem] - pre_weights[elem]) for elem in range(model_len)]
+    if Nesterov_coef is not None and better_sol_found:
+        d = [Nesterov_coef*(dc_model.get_weights()[elem] - weights0[elem]) for elem in range(model_len)]
         
         for idx in range(model_len):                            # can accelerate using set_weights
             dc_model.trainable_weights[idx].assign_add(d[idx])

@@ -21,8 +21,8 @@ tf.keras.backend.set_floatx('float64')
 
 ITERATIONS = 20
 
-params_adamax = [0.0001,0.9,0.999,1e-7]  # increase lr from 1e-5 up to 1e-4
-
+#params_adamax = [0.0001,0.9,0.999,1e-7]  # increase lr from 1e-5 up to 1e-4
+params_adamax = 0.0001
 params_decom_list = []
 
 eps2_list = [1.,0.1,0.001]
@@ -43,9 +43,9 @@ for i in range(ITERATIONS):
     params_decom = [eps1,eps2,rho1,rho2,rho3,kappa1,kappa2,kappa3]
 
     dc_model = get_dc_model_v3(params_decom)
-
+    
     train_time,train_loss,train_accuracy,val_accuracy = \
-    train_v2(dc_model=dc_model, reg_param = 0.0,epochs=20,num_iter_cnvx=1,\
+    train_v2(dc_model=dc_model, reg_param = 0.000001,epochs=20,num_iter_cnvx=1,\
           max_iter_cnvx=80,convex_optimizer='Adamax',learning_rate=params_adamax,ld=0)
     
         

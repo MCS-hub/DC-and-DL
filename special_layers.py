@@ -150,7 +150,7 @@ class DC_V3_type1(keras.layers.Layer):
         return tf.concat([G,H],1)
 
 
-# the second DC layer: applicable for all other layers except the first DC layer
+# the second DC layer: applicable for all other layers except for the first DC layer
 class DC_V3_type2(keras.layers.Layer):
     def __init__(self,units=32,rho1=1,rho2=1,rho3=1,kappa1=1,kappa2=1,kappa3=1):
         super(DC_V3_type2,self).__init__()
