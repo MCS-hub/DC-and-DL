@@ -49,3 +49,11 @@ rate_kappa1 = 2.
 
 
 May_27_21: the ``semi-final" results.
+
+
+June_11_21: online DCA like
+eta = 2
+delta = 0.9
+mu0_list = [0.1,1,10,100,1000]
+n_linesearch = 10
+epochs = 20

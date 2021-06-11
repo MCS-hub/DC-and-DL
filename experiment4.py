@@ -28,7 +28,14 @@ params_decom = [eps1,eps2,rho1,rho2,rho3,kappa1,kappa2,kappa3]
 
 dc_model = get_dc_model_v3(params_decom)
 
-initial_point = dc_model.get_weights()
+
+# with open('initial_point.pkl','wb') as f:
+#     pickle.dump(initial_point,f)
+
+with open('initial_point.pkl','rb') as f:
+    initial_point = pickle.load(f)
+
+dc_model.set_weights(initial_point)
 
 train_time,train_loss,train_accuracy,val_accuracy = \
 train_v2(dc_model=dc_model, reg_param = 0.000001,epochs=20,num_iter_cnvx=1,\
@@ -41,7 +48,7 @@ model.set_weights(solution)
 test_accuracy = test(model)
 
 with open('osDCA.pkl','wb') as f:
-    pickle.dump([train_time,train_loss,train_accuracy,val_accuracy,test_accuracy,initial_point,solution],f)
+    pickle.dump([train_time,train_loss,train_accuracy,val_accuracy,test_accuracy,solution],f)
 # dc_model = get_dc_model_v3(params_decom)
 
 # train_time1,train_loss1,train_accuracy1,val_accuracy1 = \
@@ -56,8 +63,8 @@ plt.plot(train_time,train_accuracy)
 
 #%%
 # train the normal model for 
-with open('osDCA.pkl','rb') as f:
-    [train_time,train_loss,train_accuracy,val_accuracy,test_accuracy,initial_point,solution] = pickle.load(f)
+with open('initial_point.pkl','rb') as f:
+    initial_point = pickle.load(f)
     
 model = get_model()
 model.set_weights(initial_point)
@@ -66,9 +73,10 @@ model.set_weights(initial_point)
 
 solution = model.get_weights()
 
+[train_time1, train_loss1, train_accuracy1, val_accuracy1] = [train_time, train_loss, train_accuracy, val_accuracy]
 
+plt.plot(train_time1,val_accuracy1)
 plt.plot(train_time,val_accuracy)
-
 
     
  

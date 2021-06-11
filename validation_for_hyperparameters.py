@@ -23,7 +23,6 @@ tf.keras.backend.set_floatx('float64')
 # set path
 path = os.getcwd()
 
-
 # parameters for the normal model
 batch_size=64
 loss_fn = tf.keras.losses.SparseCategoricalCrossentropy()  #cross-entropy loss
@@ -137,7 +136,6 @@ for reg_param in reg_param_list:
         with open('objs'+'_Adam_reg_'+str(reg_param)+'_lr_'+str(learning_rate)+'sigmoid'+'_.pkl','wb') as f:  
             pickle.dump([train_loss,train_time,train_accuracy,val_accuracy],f)
         del model
-        
 #------------------------------------------------------------------------------
 
 # plot graphs to choose hyperparameters

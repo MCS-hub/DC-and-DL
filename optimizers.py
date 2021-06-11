@@ -10,7 +10,8 @@ from utils.utils import norm_square, scalar_product
 from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import math_ops
 from get_model import get_dc_model_v3
-     
+from utils.utils import norm_square
+from config import loss_fn
 
 # osDCA with Hessian-free for solving convex subproblems
 def osDCA(dc_model,reg_param,damping_const_init,num_iter_cnvx,max_iter_cnvx,cg_eps,x_batch,y_batch):
@@ -316,3 +317,42 @@ def osDCAlike_V2(init_weights,params_decom,reg_param,learning_rate,num_iter_cnvx
         return updated_weights
     else:
         return dc_model.get_weights()
+    
+    
+# canonical osDCA_like    
+def onlineDCA_like_v3(model,muk,eta,n_linesearch,x_batch,y_batch):
+    
+    model_len = len(model.trainable_weights)
+    
+    # compute f(xk) and gradf(xk)
+    with tf.GradientTape() as tape:
+        output = tf.keras.activations.softmax(model(x_batch), axis=-1)
+        fxk = loss_fn(y_batch,output) 
+    gradfxk = tape.gradient(fxk, model.trainable_weights)
+    
+    # store some values to be used later
+    xk = model.get_weights()
+    nq_xk = norm_square(xk)
+    mu = muk
+    
+    # compute x(k+1)
+    xkp1 = [xk[i]-(1/mu)*gradfxk[i] for i in range(model_len)]
+    
+    # perform a line-search
+    for icount in range(n_linesearch):
+        nq_xkp1 = norm_square(xkp1)
+        model.set_weights(xkp1)
+        output = tf.keras.activations.softmax(model(x_batch), axis=-1)
+        fxkp1 = loss_fn(y_batch,output)
+        yk = [mu*xk[i]-gradfxk[i] for i in range(model_len)]
+        if (mu/2)*nq_xkp1 - fxkp1 >= (mu/2)*nq_xk - fxk +scalar_product(yk,[xkp1[i]-xk[i] for i in range(model_len)]):
+                break  
+        
+        # increase mu
+        mu = eta*mu
+        
+        # compute the updated solution
+        xkp1 = [xk[i] - (1/mu)*gradfxk[i] for i in range(model_len)]
+    
+    #print('number of linesearch: ',icount)
+    return mu

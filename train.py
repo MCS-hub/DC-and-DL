@@ -12,7 +12,7 @@ from tensorflow.python.ops import math_ops
 from utils.utils import norm_square, scalar_product
 from get_model import get_DC_component
 from evaluation_func import evaluate, evaluate_normal_model
-from optimizers import osDCA, osDCA_V2, osDCAlike_V2
+from optimizers import osDCA, osDCA_V2, osDCAlike_V2, onlineDCA_like_v3
 
 
 from config import *
@@ -79,10 +79,19 @@ def train(dc_model, reg_param = 0.0001,epochs=3,num_iter_cnvx=3,max_iter_cnvx=20
 
 
 # train using osDCA with first-order optimizers
-def train_v2(dc_model, reg_param = 0.0001,epochs=3,num_iter_cnvx=3,max_iter_cnvx=20,convex_optimizer='Adam',learning_rate=0.001,ld=0):
+def train_v2(dc_model, reg_param = 0.0001,epochs=3,num_iter_cnvx=3,max_iter_cnvx=20,convex_optimizer='Adam',learning_rate=0.001,ld=0,small_dataset=False):
     
     global loss_fn, acc_metric, x_val, y_val, x_train, y_train, train_dataset
-        
+    
+    if small_dataset:
+        x_train_small = x_train[:10000,:]
+        y_train_small = y_train[:10000]
+
+        # create, shuffle and batch the training set
+        train_dataset = tf.data.Dataset.from_tensor_slices((x_train_small,y_train_small))
+        train_dataset = train_dataset.batch(batch_size)  # use batch_size = 10000 for the deterministic case        
+    
+    
     model_len = len(dc_model.trainable_weights)
 
     # to save histories
@@ -191,11 +200,21 @@ def train_v3(dc_model,params_decom,reg_param = 0.0001,epochs=3,num_iter_cnvx=3,m
     return train_time, train_loss, train_accuracy, val_accuracy
 
 
-def train_normal_model(model, reg_param = 0.0001,epochs=3,optimizer='Adam',learning_rate=0.001):
+def train_normal_model(model, reg_param = 0.0001,epochs=3,optimizer='Adam',learning_rate=0.001,small_dataset=False):
     
     global loss_fn, acc_metric, x_val, y_val, x_train, y_train, train_dataset
         
     model_len = len(model.trainable_weights)
+    
+    
+    if small_dataset:
+        x_train_small = x_train[:10000,:]
+        y_train_small = y_train[:10000]
+    
+        # create, shuffle and batch the training set
+        train_dataset = tf.data.Dataset.from_tensor_slices((x_train_small,y_train_small))
+        train_dataset = train_dataset.batch(batch_size)  # use batch_size = 10000 for the deterministic case
+    
 
     # to save histories
     train_time = [0]
@@ -238,6 +257,59 @@ def train_normal_model(model, reg_param = 0.0001,epochs=3,optimizer='Adam',learn
                 loss = loss_fn(y_batch,output) + reg_param*norm_square(model.trainable_weights)
             grads = tape.gradient(loss, model.trainable_weights)
             opt.apply_gradients(zip(grads,model.trainable_weights))
+            
+            if step%20==0:
+                
+                d_time = time.time() - time0
+                
+                train_time.append(train_time[-1]+d_time)
+                
+                val_acc, train_acc, loss = evaluate_normal_model(model,reg_param)
+    
+                val_accuracy.append(val_acc)
+                train_accuracy.append(train_acc)
+                train_loss.append(loss)
+                
+                print("train accuracy: ",round(train_accuracy[-1],8),"--val accuracy: ",
+                      round(val_accuracy[-1],8),"--train loss: ",round(train_loss[-1],5))
+                
+                time0 = time.time()
+    
+    return train_time, train_loss, train_accuracy, val_accuracy
+
+
+# train using online DCA-like with normal pro-decomposition: the classic DCA-like
+def train_v4(model,eta,delta,mu0,n_linesearch,epochs):
+    
+    global loss_fn, acc_metric, x_val, y_val, x_train, y_train, train_dataset
+        
+    model_len = len(model.trainable_weights)
+    reg_param = 0.0
+    mu = mu0
+ 
+    # to save histories
+    train_time = [0]
+    train_loss = []
+    train_accuracy = []
+    val_accuracy = []
+    
+
+    val_acc, train_acc, loss = evaluate_normal_model(model,reg_param)
+    
+    val_accuracy.append(val_acc)
+    train_accuracy.append(train_acc)
+    train_loss.append(loss)
+    
+    time0 = time.time()
+    
+    for epoch in range(epochs):
+        for step, (x_batch,y_batch) in enumerate(train_dataset):
+            
+            #update solution
+            mu = onlineDCA_like_v3(model,mu,eta,n_linesearch,x_batch,y_batch)
+            
+            # update mu
+            mu = max(mu0,delta*mu)
             
             if step%20==0:
                 

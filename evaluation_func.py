@@ -7,7 +7,7 @@ Created on Mon Apr 12 15:13:06 2021
 from tensorflow import keras
 from utils.utils import norm_square
 from config import x_train, y_train, x_val, y_val, y_train_tensor, loss_fn, acc_metric, x_test, y_test
-
+from sklearn import metrics
 
 # evaluate accuaracy and loss of "DC models" in train-validation sets 
 def evaluate(dc_model,reg_param):
@@ -53,7 +53,14 @@ def test(model):
     acc_metric.reset_states()
     acc_metric.update_state(y_model_label_test,y_test).numpy()
     
-    return acc_metric.result().numpy()
+    pre_macro = metrics.precision_score(y_test, y_model_label_test, average='macro')
+    rec_macro = metrics.recall_score(y_test, y_model_label_test, average='macro')
+    pre_micro = metrics.precision_score(y_test, y_model_label_test, average='micro')
+    rec_micro = metrics.recall_score(y_test, y_model_label_test, average='micro')
+    # metrics.f1_score(y_test, y_model_label_test, average='weighted')
+    # metrics.fbeta_score(y_test, y_model_label_test, average='macro', beta=0.5)
+    
+    return acc_metric.result().numpy(), pre_macro, rec_macro, pre_micro, rec_micro
 
 
 # evaluation loss and accuracies of "normal model" in train-validation sets

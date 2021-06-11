@@ -8,23 +8,35 @@ Created on Fri Apr  9 13:43:25 2021
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
-from special_layers import DC_V2, DC_V3_type1, DC_V3_type2
+from special_layers import DC_V2, DC_V3_type1, DC_V3_type2, DC_V4_type1, DC_V4_type2
 from utils.utils import log_sum_exp, norm_square
 
 # normal model for the 3-layer neural network for classification of the mnist dataset
-def get_model():
+def get_model(activation=None):
+    
+    if activation == None:
+        inputs = tf.keras.Input(shape=(784,))
+        dense1 = layers.Dense(64,activation='relu')
+        dense2 = layers.Dense(64,activation='relu')
+        dense3 = layers.Dense(10)
         
-    inputs = tf.keras.Input(shape=(784,))
-    
-    dense1 = layers.Dense(64,activation='relu')
-    dense2 = layers.Dense(64,activation='relu')
-    dense3 = layers.Dense(10)
-    
-    x = dense1(inputs)
-    x =  dense2(x)
-    outputs = dense3(x)
-    
-    model = keras.Model(inputs=inputs, outputs=outputs,name='normal_model')
+        x = dense1(inputs)
+        x =  dense2(x)
+        outputs = dense3(x)
+        
+        model = keras.Model(inputs=inputs, outputs=outputs,name='normal_model')
+    else:
+        inputs = tf.keras.Input(shape=(784,))
+        dense1 = layers.Dense(64,activation=activation)
+        dense2 = layers.Dense(64,activation=activation)
+        dense3 = layers.Dense(10)
+        
+        x = dense1(inputs)
+        x =  dense2(x)
+        outputs = dense3(x)
+        
+        model = keras.Model(inputs=inputs, outputs=outputs,name='normal_model')
+        
     return model
 
 
@@ -81,6 +93,7 @@ def get_DC_component(dc_model,x_batch,y_one_hot, component='both',reg_param = No
 
 
 # get the DC model with the "rho" decomposition for the multiplication operatiors
+# relu activation
 def get_dc_model_v3(params_decom,init_weights=None):
     
     inputs = tf.keras.Input(shape=(784,),name='input')
@@ -89,6 +102,30 @@ def get_dc_model_v3(params_decom,init_weights=None):
     DC2 = DC_V3_type2(units=10,rho1=params_decom[2],rho2=params_decom[3],rho3=params_decom[4],\
                       kappa1=params_decom[5],kappa2=params_decom[6],kappa3=params_decom[7])
 
+    # stack layers together
+    x = Dense(inputs)
+    x = DC1(x)
+    x = DC2(x)
+    
+    dc_model = keras.Model(inputs=inputs,outputs=x,name='dc_model')
+    
+    if init_weights is not None:
+        dc_model.set_weights(init_weights)
+    
+    return dc_model
+
+
+# get the DC model with "rho" decomposition for the multiplication layer
+# activation = sigmoid
+def get_dc_model_v4(params_decom,activation='relu',init_weights=None):
+    
+    inputs = tf.keras.Input(shape=(784,),name='input')
+    Dense = layers.Dense(64,name='dense')
+    DC1 = DC_V4_type1(units=64,rho1=params_decom[0],rho2=params_decom[1],kappa1=params_decom[2]\
+                      ,kappa2=params_decom[3],activation=activation)
+    DC2 = DC_V4_type2(units=10,rho1=params_decom[4],rho2=params_decom[5],rho3=params_decom[6],\
+                      kappa1=params_decom[7],kappa2=params_decom[8],kappa3=params_decom[9],activation=activation)
+    
     # stack layers together
     x = Dense(inputs)
     x = DC1(x)
